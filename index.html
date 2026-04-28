@@ -592,6 +592,7 @@ table.rtbl tbody tr:hover td{background:var(--bg2);}
       <div class="login-hint">
         請使用您的帳號密碼登入
       </div>
+      <div style="font-size:9px;color:var(--t4);text-align:center;margin-top:12px;font-family:var(--mono);">v2.1.0 · 若無法登入請按 Ctrl+Shift+R 強制重新整理</div>
     </div>
   </div>
 </div>
@@ -965,7 +966,7 @@ function lsLoad(){
 ══════════════════════════════════ */
 function doLogin(){
   const u=document.getElementById('lu').value.trim();
-  const p=document.getElementById('lp').value;
+  const p=document.getElementById('lp').value.trim(); // trim both
   const user=USERS.find(x=>x.u===u&&x.p===p);
   if(!user){
     const el=document.getElementById('lerr');
