@@ -590,8 +590,8 @@ table.rtbl tbody tr:hover td{background:var(--bg2);}
       <button class="btn-login" onclick="doLogin()">LOGIN →</button>
       <div class="login-err" id="lerr"></div>
       <div class="login-hint">
-        分析師帳號：<b>analyst</b> / admin123<br/>
-        後台管理：<b>admin</b> / admin888
+        analyst / admin123 &nbsp;·&nbsp; trader1 / trader111<br/>
+        trader2 / trader222 &nbsp;·&nbsp; admin / admin888
       </div>
     </div>
   </div>
@@ -663,7 +663,10 @@ table.rtbl tbody tr:hover td{background:var(--bg2);}
 
     <!-- RESULTS -->
     <div id="tab-results">
-      <div class="unote" id="rdlbl">尚未分析</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;" id="result-date-tabs"></div>
+        <div class="unote" id="rdlbl" style="margin:0;">尚未分析</div>
+      </div>
       <div class="sum-bar">
         <div class="sum-card">
           <div class="sum-n n-ora" id="sstar">0</div>
@@ -757,6 +760,44 @@ table.rtbl tbody tr:hover td{background:var(--bg2);}
   <span>本工具僅供研究參考，不構成任何投資建議</span>
 </div>
 </div><!-- /app-screen -->
+
+<!-- ════ CLOSING REMINDER MODAL ════ -->
+<div class="modal-overlay" id="reminder-overlay" style="display:none;">
+  <div class="modal" style="max-width:460px;" onclick="event.stopPropagation()">
+    <div class="mhdr" style="background:linear-gradient(135deg,rgba(255,98,0,.12),rgba(255,98,0,.04));">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--ora);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 16px var(--ora-glow);">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="white" stroke-width="1.5"/><line x1="10" y1="5.5" x2="10" y2="10.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="13.5" r="1" fill="white"/></svg>
+      </div>
+      <div>
+        <div class="mhdr-title" style="color:var(--ora);">⏰ 收盤後 10 分鐘提醒</div>
+        <div class="mhdr-sub">台股已收盤，現在是記錄黃金時間</div>
+      </div>
+    </div>
+    <div class="mbody" style="text-align:center;padding:28px 32px;">
+      <div style="font-family:var(--display);font-size:42px;font-weight:800;color:var(--ora);letter-spacing:-1px;margin-bottom:4px;" id="reminder-time">13:30</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:24px;">記錄窗口：收盤後 10 分鐘內完成</div>
+
+      <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r12);padding:16px;margin-bottom:20px;text-align:left;">
+        <div style="font-family:var(--display);font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:12px;">今日待記錄股票</div>
+        <div id="reminder-stocks" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <div style="font-size:12px;color:rgba(255,140,50,.7);font-style:italic;margin-bottom:20px;line-height:1.7;">
+        「籌碼面的記錄必須是冷的，不能是熱的。<br/>現在記，才是事實。等一下記，就是記憶。」
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <button class="btn-exp" onclick="closeReminder();switchTab('results');" style="flex:1;">
+          立刻去記錄 →
+        </button>
+        <button class="btn-exp-outline" onclick="closeReminder();" style="flex:0;padding:0 16px;">
+          稍後提醒
+        </button>
+      </div>
+      <div style="font-size:10px;color:var(--t3);margin-top:12px;">「寧可空手，不要買錯。紀律從記錄開始。」</div>
+    </div>
+  </div>
+</div>
 
 <!-- ════ README MODAL ════ -->
 <div class="modal-overlay" id="rmoverlay" onclick="closeReadme(event)">
@@ -869,9 +910,10 @@ table.rtbl tbody tr:hover td{background:var(--bg2);}
    CONSTANTS & STATE
 ══════════════════════════════════ */
 const USERS=[
-  {u:'analyst',p:'admin123',name:'分析師',role:'user',av:'AN'},
-  {u:'trader', p:'pass456', name:'操盤手', role:'user',av:'TR'},
-  {u:'admin',  p:'admin888',name:'系統管理員',role:'admin',av:'AD'},
+  {u:'analyst', p:'admin123', name:'分析師',   role:'user', av:'AN'},
+  {u:'trader1', p:'trader111',name:'Trader 1', role:'user', av:'T1'},
+  {u:'trader2', p:'trader222',name:'Trader 2', role:'user', av:'T2'},
+  {u:'admin',   p:'admin888', name:'系統管理員',role:'admin',av:'AD'},
 ];
 const WISDOMS=[
   '「這市場上最擁擠的路叫捷徑，最寬敞的路叫紀律。」',
@@ -884,6 +926,7 @@ const WISDOMS=[
 
 let CU=null;
 let chV=null,chP=null,chH=null,chC=null;
+let resultViewDate=null;
 
 const S={
   dates:[],
@@ -1253,12 +1296,17 @@ function analyze(code){
 function runAnalysis(){
   if(!S.stocks.length){alert('請先加入股票');return;}
   S.results=S.stocks.map(s=>analyze(s.code)).filter(Boolean);
+  // default to today if has data, else all
+  const todayKey = new Date().toISOString().slice(0,10);
+  const todayInWeek = S.dates.find(d=>d.key===todayKey);
+  resultViewDate = todayInWeek ? todayKey : null;
   switchTab('results');
   document.getElementById('sstar').textContent=S.results.filter(r=>r.count===3).length;
   document.getElementById('swat').textContent=S.results.filter(r=>r.count<3&&r.count>=1).length;
   document.getElementById('sstrk').textContent=S.results.filter(r=>r.streak).length;
-  document.getElementById('rdlbl').textContent=`LAST ANALYZED · ${new Date().toLocaleString('zh-TW')}`;
+  document.getElementById('rdlbl').textContent=`更新：${new Date().toLocaleString('zh-TW')}`;
   document.getElementById('wtxt').textContent=WISDOMS[Math.floor(Math.random()*WISDOMS.length)];
+  renderResultDateTabs();
   renderResults();renderTrack();
 }
 
@@ -1267,10 +1315,39 @@ function runAnalysis(){
 ══════════════════════════════════ */
 function renderResults(){
   const el=document.getElementById('rarea');
-  if(!S.results.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">📊</div><div class="empty-txt">無資料</div></div>';return;
+
+  // When viewing a specific day, re-analyze just that day's snapshot
+  let displayResults;
+  if(resultViewDate){
+    // For single-day view: show each stock's entry for that day with simple condition check
+    displayResults = S.stocks.map(s=>{
+      const e = S.entries[ek(resultViewDate, s.code)];
+      if(!e || (!e.close && !e.vol)) return null;
+      // run full analysis but we'll note it's single-day
+      const r = analyze(s.code);
+      if(!r) return null;
+      return {...r, _dayView: resultViewDate};
+    }).filter(Boolean);
+  } else {
+    displayResults = S.results;
   }
-  const sorted=[...S.results].sort((a,b)=>b.count-a.count);
+
+  if(!displayResults.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📊</div><div class="empty-txt">'+
+      (resultViewDate ? '此日期尚無記錄資料' : '無資料')+'</div></div>';return;
+  }
+
+  // Show date context label
+  const dateObj = resultViewDate ? S.dates.find(d=>d.key===resultViewDate) : null;
+  const dateLabel = dateObj
+    ? `<div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--ora);letter-spacing:.5px;margin-bottom:10px;">
+        📅 ${dateObj.label}(${dateObj.wl}) 分析快照
+       </div>`
+    : `<div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.5px;margin-bottom:10px;">
+        📊 全週綜合分析
+       </div>`;
+
+  const sorted=[...displayResults].sort((a,b)=>b.count-a.count);
   const rows=sorted.map((r,i)=>{
     const dots=[r.c1,r.c2,r.c3].map(c=>`<span class="dot ${c?'on':'off'}"></span>`).join('');
     let vrd;
@@ -1283,18 +1360,31 @@ function renderResults(){
     const diff=r.close&&r.avgbuy?((r.close-r.avgbuy)/r.avgbuy*100).toFixed(1):'—';
     const dc=r.c3?'var(--green)':'var(--red)';
     const ch=r.change!==null?`<div class="${r.change>0?'tup':'tdn'}">${r.change>0?'▲':'▼'}${Math.abs(r.change).toFixed(2)}</div>`:'';
+
+    // Day-specific: show entry data for that date if in single-day mode
+    let dayClose = r.close, dayVol = r.vol, dayBroker = r.broker, dayChange = r.change;
+    if(resultViewDate){
+      const e = S.entries[ek(resultViewDate, r.code)]||{};
+      dayClose = e.close||0;
+      dayVol = e.vol||0;
+      dayBroker = e.broker||'—';
+      dayChange = e.close&&e.prev ? e.close-e.prev : null;
+    }
+    const dayCh=dayChange!==null?`<div class="${dayChange>0?'tup':'tdn'}">${dayChange>0?'▲':'▼'}${Math.abs(dayChange).toFixed(2)}</div>`:'';
+    const dayDiff=dayClose&&r.avgbuy?((dayClose-r.avgbuy)/r.avgbuy*100).toFixed(1):'—';
+
     return`<tr>
       <td style="font-family:var(--mono);font-size:10px;color:var(--t3);width:32px;">${String(i+1).padStart(2,'0')}</td>
       <td><div class="code-big">${r.code}</div><div class="nm-sm">${r.name}</div></td>
-      <td><div class="mono" style="font-size:13px;color:var(--t0);">${r.close?r.close.toFixed(2):'—'}</div>${ch}</td>
-      <td><div class="nm-sm" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.broker}</div></td>
-      <td><div class="mono">${r.vol?r.vol.toLocaleString():'—'}</div>${th}</td>
-      <td><span style="font-family:var(--mono);font-size:11px;color:${dc};">${diff!=='—'?diff+'%':'—'}</span></td>
+      <td><div class="mono" style="font-size:13px;color:var(--t0);">${dayClose?dayClose.toFixed(2):'—'}</div>${dayCh}</td>
+      <td><div class="nm-sm" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${dayBroker}</div></td>
+      <td><div class="mono">${dayVol?dayVol.toLocaleString():'—'}</div>${th}</td>
+      <td><span style="font-family:var(--mono);font-size:11px;color:${dc};">${dayDiff!=='—'?dayDiff+'%':'—'}</span></td>
       <td><div class="dots-row">${dots}</div></td>
       <td>${vrd}${miss?'<div style="margin-top:4px;">'+miss+'</div>':''}</td>
     </tr>`;
   }).join('');
-  el.innerHTML=`<div class="tbl-wrap"><table class="rtbl">
+  el.innerHTML=dateLabel+`<div class="tbl-wrap"><table class="rtbl">
     <thead><tr><th>#</th><th>代碼 / 名稱</th><th>收盤</th><th>分點</th><th>買超張</th><th>均買差</th><th>1 / 2 / 3</th><th>判定</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
@@ -1504,6 +1594,104 @@ document.addEventListener('keydown',e=>{
 
 /* auto-save every 60s */
 setInterval(()=>{if(CU)lsSave();},60000);
+
+/* ══════════════════════════════════
+   RESULT DATE TABS — view per day
+══════════════════════════════════ */
+let resultViewDate = null; // null = all days combined
+
+function renderResultDateTabs(){
+  const el = document.getElementById('result-date-tabs');
+  if(!el) return;
+  // find dates that have any entry data
+  const datesWithData = S.dates.filter(d => S.stocks.some(s => S.entries[ek(d.key, s.code)]));
+  if(!datesWithData.length){ el.innerHTML=''; return; }
+
+  const allBtn = `<button class="dtab ${resultViewDate===null?'active has-data':''}"
+    onclick="setResultDate(null)"
+    style="font-size:10px;padding:5px 10px;border-radius:var(--r4);white-space:nowrap;">全週總覽</button>`;
+
+  const dayBtns = datesWithData.map(d =>
+    `<button class="dtab ${resultViewDate===d.key?'active has-data':'has-data'}"
+      onclick="setResultDate('${d.key}')"
+      style="font-size:10px;padding:5px 10px;border-radius:var(--r4);white-space:nowrap;">${d.label}(${d.wl})</button>`
+  ).join('');
+
+  el.innerHTML = allBtn + dayBtns;
+}
+
+function setResultDate(key){
+  resultViewDate = key;
+  renderResultDateTabs();
+  renderResults();
+}
+
+/* ══════════════════════════════════
+   CLOSING REMINDER
+══════════════════════════════════ */
+function openReminder(){
+  const now = new Date();
+  document.getElementById('reminder-time').textContent =
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  // show uncompleted stocks for today
+  const todayKey = now.toISOString().slice(0,10);
+  const el = document.getElementById('reminder-stocks');
+  if(!S.stocks.length){
+    el.innerHTML = '<div style="font-size:12px;color:var(--t3);">尚未加入觀察股票</div>';
+  } else {
+    el.innerHTML = S.stocks.map(s => {
+      const e = S.entries[ek(todayKey, s.code)];
+      const done = e && e.close && e.vol;
+      return `<div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--mono);font-size:12px;color:${done?'var(--green)':'var(--t0)'};">${s.code}</span>
+        <span style="font-size:11px;color:var(--t3);">${s.name!==s.code?s.name:''}</span>
+        <span style="margin-left:auto;font-size:10px;font-weight:600;font-family:var(--display);
+          padding:2px 8px;border-radius:3px;
+          background:${done?'var(--green-bg)':'var(--red-bg)'};
+          color:${done?'var(--green)':'var(--red)'};">
+          ${done?'已記錄 ✓':'未記錄'}
+        </span>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('reminder-overlay').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReminder(){
+  document.getElementById('reminder-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+  // store dismissed date so it doesn't show again today
+  try{ localStorage.setItem('of_reminder_dismissed', new Date().toISOString().slice(0,10)); }catch(e){}
+}
+
+function checkReminderTime(){
+  if(!CU) return; // not logged in
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const wd = now.getDay();
+  // only weekdays, between 13:30 and 14:00
+  if(wd === 0 || wd === 6) return;
+  if(h < 13 || (h === 13 && m < 30) || h >= 14) return;
+
+  // check if already dismissed today
+  try{
+    const dismissed = localStorage.getItem('of_reminder_dismissed');
+    if(dismissed === now.toISOString().slice(0,10)) return;
+  }catch(e){}
+
+  // check if modal already open
+  if(document.getElementById('reminder-overlay').style.display === 'block') return;
+
+  openReminder();
+}
+
+// Check every 30 seconds
+setInterval(checkReminderTime, 30000);
+
 </script>
 </body>
 </html>
