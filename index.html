@@ -2,7 +2,9 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d0d0b"/>
+<meta name="format-detection" content="telephone=no"/>
 <title>Orange Fruit｜台股籌碼面分析平台</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -165,6 +167,241 @@ button{cursor:pointer;}
   min-height:calc(100vh - 52px);
 }
 @media(max-width:900px){.app-layout{grid-template-columns:1fr;}}
+
+/* ─────────────────────────────────────────
+   📱 MOBILE OPTIMIZATIONS  (≤ 768px)
+   ───────────────────────────────────────── */
+@media(max-width:768px){
+  html{font-size:14px;}
+
+  /* TOPBAR — compact */
+  .topbar{
+    height:50px;padding:0 12px;gap:8px;
+    overflow-x:auto;scrollbar-width:none;
+  }
+  .topbar::-webkit-scrollbar{display:none;}
+  .topbar-div,.topbar-sub{display:none;}
+  .topbar-title{font-size:12px;}
+  .logo-icon{width:28px;height:28px;border-radius:6px;}
+  .logo-text span{font-size:10px !important;letter-spacing:1.4px !important;}
+  .topbar-right{gap:6px;}
+  .analyst-badge{display:none;}
+  .btn-outline{height:30px;padding:0 10px;font-size:11px;}
+  .btn-outline svg{width:11px;height:11px;}
+  .user-pill{padding:3px 8px 3px 4px;font-size:10px;}
+  .user-av{width:18px;height:18px;font-size:8px;}
+
+  /* APP LAYOUT — single column, sidebar becomes top section */
+  .app-layout{grid-template-columns:1fr;}
+  .sidebar{
+    position:static;max-height:none;
+    border-right:none;border-bottom:1px solid var(--bdr);
+    padding:12px;gap:10px;
+  }
+  .main-panel{padding:14px 12px 24px;}
+
+  /* SECTION CARD — tighter */
+  .scard{padding:12px 13px;border-radius:var(--r12);}
+  .scard-title{font-size:11px;margin-bottom:10px;}
+
+  /* DATE TABS — keep 5 columns but bigger touch area */
+  .date-grid{gap:5px;}
+  .dtab{
+    font-size:10px;padding:9px 2px;
+    min-height:40px;line-height:1.25;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+  }
+  .date-legend{font-size:9px;margin-top:8px;flex-wrap:wrap;}
+
+  /* CHIPS — bigger tap target */
+  .chips-area{min-height:44px;padding:8px;gap:6px;}
+  .chip{padding:5px 9px;font-size:11px;}
+  .chip-rm{font-size:16px;padding:0 2px;min-width:18px;min-height:18px;}
+  .add-row{gap:6px;flex-wrap:nowrap;}
+  .input-sm{height:38px;font-size:14px;padding:0 11px;flex:1;min-width:0;}
+  .btn-fetch{height:38px;padding:0 12px;font-size:12px;}
+  .btn-ghost{height:38px;padding:0 11px;font-size:11px;}
+
+  /* FORM — single column on mobile, bigger inputs */
+  .form-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .fg{gap:5px;}
+  .fl{font-size:11px;}
+  .fi{
+    height:42px;font-size:15px;padding:0 11px;
+    /* font-size:16px+ prevents iOS zoom; 15px+ is safe with input modes below */
+  }
+  /* Prevent iOS auto-zoom on focus for number inputs */
+  input[type="number"],input[type="text"],input[type="password"]{font-size:16px;}
+  .fi[type="number"]{font-size:15px;}
+
+  .btn-save{height:42px;font-size:13px;}
+  .btn-run{height:48px;font-size:14px;letter-spacing:1.2px;}
+
+  /* TAB NAV — sticky for fast switching */
+  .tab-nav{
+    margin:0 -12px 14px;
+    padding:0 12px;
+    position:sticky;top:50px;z-index:50;
+    background:var(--bg);
+    border-bottom:1px solid var(--bdr);
+    -webkit-overflow-scrolling:touch;
+  }
+  .tnb{font-size:12px;padding:11px 14px;flex-shrink:0;}
+
+  /* SUMMARY BAR — tighter, smaller numbers */
+  .sum-bar{gap:7px;margin-bottom:14px;}
+  .sum-card{padding:11px 10px;border-radius:var(--r8);}
+  .sum-n{font-size:22px;}
+  .sum-l{font-size:9px;margin-top:3px;letter-spacing:.2px;}
+
+  /* RESULT DATE TABS row */
+  .unote{font-size:9px;}
+
+  /* TABLE — make horizontal scroll obvious */
+  .tbl-wrap{
+    margin:0 -12px;border-radius:0;border-left:none;border-right:none;
+    /* hint user it scrolls */
+    background:linear-gradient(to right,var(--bg) 30%,transparent),
+               linear-gradient(to right,transparent,var(--bg) 70%) 100% 0,
+               linear-gradient(to right,rgba(255,98,0,.08),transparent) 0 0,
+               linear-gradient(to left,rgba(255,98,0,.08),transparent) 100% 0;
+    background-repeat:no-repeat;
+    background-size:30px 100%,30px 100%,15px 100%,15px 100%;
+    background-attachment:local,local,scroll,scroll;
+  }
+  table.rtbl{font-size:11px;min-width:560px;}
+  table.rtbl th{padding:9px 10px;font-size:9px;}
+  table.rtbl td{padding:10px;}
+  .code-big{font-size:12px;}
+
+  /* WISDOM */
+  .wisdom{margin-top:14px;padding:12px 14px;}
+  .wisdom-txt{font-size:12px;line-height:1.6;}
+
+  /* CHART CARD */
+  .chart-card{padding:13px;margin-bottom:12px;}
+  .chart-hdr{flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .chart-title{font-size:11px;}
+  .chart-sel{margin-left:0;font-size:12px;height:32px;}
+
+  /* EXPORT */
+  .export-card{padding:16px;}
+  .exp-btns{flex-direction:column;}
+  .btn-exp,.btn-exp-outline{width:100%;height:42px;justify-content:center;}
+
+  /* TRACK CARD */
+  .tk-card{padding:13px;}
+
+  /* ADMIN — table can scroll */
+  .admin-card{padding:14px;}
+  .admin-tbl{font-size:11px;display:block;overflow-x:auto;white-space:nowrap;}
+  .admin-tbl th,.admin-tbl td{padding:8px 10px;}
+
+  /* MODAL — full-width on mobile */
+  .modal-overlay{padding:12px 8px;}
+  .modal{border-radius:var(--r12);}
+  .mhdr{padding:14px 16px;}
+  .mhdr-title{font-size:13px;}
+  .mhdr-sub{font-size:9px;}
+  .mbody{padding:18px 16px;}
+  .mftr{padding:10px 14px;flex-wrap:wrap;gap:8px;}
+  .rm-h{font-size:10px;}
+  .rm-step{gap:9px;margin-bottom:11px;}
+  .rm-step-body{font-size:12px;line-height:1.6;}
+  .rm-code{font-size:10px;line-height:1.8;padding:9px 10px;}
+  .rm-cond{padding:10px 11px;gap:9px;}
+  .rm-verd{padding:11px 12px;}
+  .rm-verd div{font-size:11px;line-height:1.9;}
+  .rm-wisdom-box div{font-size:11px;line-height:2;}
+  .rm-quote p{font-size:11px;}
+
+  /* Reminder modal */
+  #reminder-overlay .mbody{padding:22px 18px !important;}
+  #reminder-time{font-size:36px !important;}
+
+  /* LOGIN — tighter */
+  #login-screen{padding:16px;min-height:calc(100vh - 50px);}
+  .login-card{padding:28px 22px;border-radius:var(--r12);}
+  .login-h{font-size:20px;}
+  .login-sub{font-size:11px;margin-bottom:22px;}
+  .login-brand{font-size:16px;}
+  .input{height:44px;font-size:15px;}
+  .btn-login{height:46px;font-size:13px;}
+
+  /* FOOTER */
+  .app-footer{padding:14px 12px;font-size:9px;line-height:1.7;}
+
+  /* COLLAPSIBLE SCARD — only on mobile */
+  .scard[data-collapsible] .scard-title{
+    cursor:pointer;
+    margin-bottom:0;
+    padding:2px 0;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .scard[data-collapsible].collapsed .scard-title{
+    margin-bottom:0;
+  }
+  .scard[data-collapsible]:not(.collapsed) .scard-title{
+    margin-bottom:11px;
+  }
+  .card-toggle{
+    margin-left:auto;
+    color:var(--t3);
+    font-size:14px;
+    transition:transform .2s ease;
+    font-family:var(--mono);
+  }
+  .scard[data-collapsible].collapsed .card-toggle{
+    transform:rotate(-90deg);
+  }
+  .scard[data-collapsible].collapsed .card-body{
+    display:none;
+  }
+
+  /* FLOATING ACTION BUTTON — jump to results */
+  .fab-jump{
+    display:none;
+    position:fixed;
+    right:14px;
+    bottom:calc(14px + env(safe-area-inset-bottom,0px));
+    height:42px;padding:0 16px;
+    border:none;border-radius:21px;
+    background:var(--ora);color:#fff;
+    font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:.5px;
+    box-shadow:0 6px 20px rgba(255,98,0,.45),0 2px 6px rgba(0,0,0,.4);
+    align-items:center;gap:6px;
+    z-index:400;
+    transition:transform .15s,box-shadow .15s;
+  }
+  .fab-jump.show{display:flex;}
+  .fab-jump:active{transform:scale(.95);}
+}
+
+/* On desktop, force scard body to always show */
+@media(min-width:769px){
+  .scard[data-collapsible] .card-body{display:block !important;}
+  .scard[data-collapsible] .card-toggle{display:none;}
+  .fab-jump{display:none !important;}
+}
+
+/* ─────────────────────────────────────────
+   📱 SMALL PHONES  (≤ 380px)
+   ───────────────────────────────────────── */
+@media(max-width:380px){
+  .topbar{padding:0 10px;gap:6px;}
+  .topbar-title{font-size:11px;}
+  .btn-outline{padding:0 8px;font-size:10px;}
+  .btn-outline span,
+  .btn-outline:not([id="btnlogout"]) > svg + *{display:none;}
+
+  .form-grid{grid-template-columns:1fr;}
+  .sum-n{font-size:20px;}
+  .sum-l{font-size:8px;}
+  .dtab{font-size:9px;padding:8px 1px;min-height:36px;}
+
+  .tnb{font-size:11px;padding:10px 11px;}
+}
 
 /* ─── LEFT SIDEBAR ─── */
 .sidebar{
@@ -605,51 +842,63 @@ table.rtbl tbody tr:hover td{background:var(--bg2);}
   <aside class="sidebar">
 
     <!-- 日期 -->
-    <div class="scard">
-      <div class="scard-title"><span class="icon">📅</span> 本週觀察日期</div>
-      <div class="date-grid" id="date-tabs"></div>
-      <div class="date-legend" style="margin-top:8px;">
-        <span><div class="leg-dot" style="background:var(--ora);"></div>有記錄</span>
-        <span><div class="leg-dot" style="background:var(--t0);"></div>今日</span>
+    <div class="scard" data-collapsible>
+      <div class="scard-title" onclick="toggleCard(this)"><span class="icon">📅</span> 本週觀察日期<span class="card-toggle" aria-hidden="true">▾</span></div>
+      <div class="card-body">
+        <div class="date-grid" id="date-tabs"></div>
+        <div class="date-legend" style="margin-top:8px;">
+          <span><div class="leg-dot" style="background:var(--ora);"></div>有記錄</span>
+          <span><div class="leg-dot" style="background:var(--t0);"></div>今日</span>
+        </div>
       </div>
     </div>
 
     <!-- 股票清單 -->
-    <div class="scard">
-      <div class="scard-title"><span class="icon">📋</span> 觀察清單</div>
-      <div class="chips-area" id="schips"><span style="font-size:11px;color:var(--t3)">尚未加入股票</span></div>
-      <div class="add-row">
-        <input class="input-sm" id="aci" type="text" placeholder="股票代碼" maxlength="6"/>
-        <button class="btn-fetch" id="btnfetch" onclick="fetchOne()">抓行情</button>
-        <button class="btn-ghost" onclick="addManual()">手動</button>
-      </div>
-      <div class="count-hint">已加入 <b id="ccount">0</b> / 10 支 · 每三天更新清單</div>
-      <div style="margin-top:10px;">
-        <div class="fetch-status" id="fstatus"><span style="color:var(--t3);">等待抓取...</span></div>
-        <div class="flog" id="flog"></div>
+    <div class="scard" data-collapsible>
+      <div class="scard-title" onclick="toggleCard(this)"><span class="icon">📋</span> 觀察清單<span class="card-toggle" aria-hidden="true">▾</span></div>
+      <div class="card-body">
+        <div class="chips-area" id="schips"><span style="font-size:11px;color:var(--t3)">尚未加入股票</span></div>
+        <div class="add-row">
+          <input class="input-sm" id="aci" type="text" placeholder="股票代碼" maxlength="6"/>
+          <button class="btn-fetch" id="btnfetch" onclick="fetchOne()">抓行情</button>
+          <button class="btn-ghost" onclick="addManual()">手動</button>
+        </div>
+        <div class="count-hint">已加入 <b id="ccount">0</b> / 10 支 · 每三天更新清單</div>
+        <div style="margin-top:10px;">
+          <div class="fetch-status" id="fstatus"><span style="color:var(--t3);">等待抓取...</span></div>
+          <div class="flog" id="flog"></div>
+        </div>
       </div>
     </div>
 
     <!-- 輸入數據 -->
-    <div class="scard">
-      <div class="scard-title"><span class="icon">✏️</span> 輸入今日數據</div>
-      <div class="stk-sel" id="ssel"><span style="font-size:11px;color:var(--t3)">請先加入股票</span></div>
-      <div class="form-grid">
-        <div class="fg"><div class="fl">股票名稱</div><input class="fi" id="fn" readonly placeholder="自動填入"/></div>
-        <div class="fg"><div class="fl">收盤價</div><input class="fi" id="fc" type="number" step="0.01" placeholder="127.0"/></div>
-        <div class="fg"><div class="fl">開盤價</div><input class="fi" id="fo" type="number" step="0.01" placeholder="125.5"/></div>
-        <div class="fg"><div class="fl">昨收</div><input class="fi" id="fp" type="number" step="0.01" placeholder="126.0"/></div>
-        <div class="fg"><div class="fl">券商分點</div><input class="fi" id="fb" placeholder="凱基-台北"/></div>
-        <div class="fg"><div class="fl">買超張數</div><input class="fi" id="fv" type="number" placeholder="650"/></div>
-        <div class="fg"><div class="fl">集保戶數</div><input class="fi" id="fh" type="number" placeholder="12450"/></div>
-        <div class="fg"><div class="fl">主力均買價</div><input class="fi" id="fa" type="number" step="0.01" placeholder="124.5"/></div>
+    <div class="scard" data-collapsible>
+      <div class="scard-title" onclick="toggleCard(this)"><span class="icon">✏️</span> 輸入今日數據<span class="card-toggle" aria-hidden="true">▾</span></div>
+      <div class="card-body">
+        <div class="stk-sel" id="ssel"><span style="font-size:11px;color:var(--t3)">請先加入股票</span></div>
+        <div class="form-grid">
+          <div class="fg"><div class="fl">股票名稱</div><input class="fi" id="fn" readonly placeholder="自動填入"/></div>
+          <div class="fg"><div class="fl">收盤價</div><input class="fi" id="fc" type="number" step="0.01" inputmode="decimal" placeholder="127.0"/></div>
+          <div class="fg"><div class="fl">開盤價</div><input class="fi" id="fo" type="number" step="0.01" inputmode="decimal" placeholder="125.5"/></div>
+          <div class="fg"><div class="fl">昨收</div><input class="fi" id="fp" type="number" step="0.01" inputmode="decimal" placeholder="126.0"/></div>
+          <div class="fg"><div class="fl">券商分點</div><input class="fi" id="fb" placeholder="凱基-台北"/></div>
+          <div class="fg"><div class="fl">買超張數</div><input class="fi" id="fv" type="number" inputmode="numeric" placeholder="650"/></div>
+          <div class="fg"><div class="fl">集保戶數</div><input class="fi" id="fh" type="number" inputmode="numeric" placeholder="12450"/></div>
+          <div class="fg"><div class="fl">主力均買價</div><input class="fi" id="fa" type="number" step="0.01" inputmode="decimal" placeholder="124.5"/></div>
+        </div>
+        <button class="btn-save" onclick="saveEntry()">儲存今日數據</button>
       </div>
-      <button class="btn-save" onclick="saveEntry()">儲存今日數據</button>
     </div>
 
     <button class="btn-run" onclick="runAnalysis()">執行三重過濾分析 →</button>
 
   </aside>
+
+  <!-- 手機浮動按鈕：滾到分析結果 -->
+  <button class="fab-jump" onclick="jumpToResults()" aria-label="跳到分析結果">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v10M3.5 7.5L8 12l4.5-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>看結果</span>
+  </button>
 
   <!-- MAIN PANEL -->
   <main class="main-panel">
@@ -926,7 +1175,7 @@ const WISDOMS=[
 
 let CU=null;
 let chV=null,chP=null,chH=null,chC=null;
-let resultViewDate=null;
+let resultViewDate = null; // null = all days combined
 
 const S={
   dates:[],
@@ -986,6 +1235,7 @@ function doLogin(){
   lsLoad();
   initDates();
   renderChips();
+  setupMobile();
 }
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('lu').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('lp').focus();});
@@ -1002,6 +1252,75 @@ function logout(){
   document.getElementById('lp').value='';
   // reset state
   S.stocks=[];S.entries={};S.results=[];S.sel=null;
+}
+
+/* ══════════════════════════════════
+   MOBILE UX — collapsible cards & FAB
+══════════════════════════════════ */
+function isMobile(){return window.matchMedia('(max-width:768px)').matches;}
+
+function toggleCard(titleEl){
+  if(!isMobile())return; // desktop: do nothing
+  const card=titleEl.closest('.scard');
+  if(!card)return;
+  card.classList.toggle('collapsed');
+}
+
+function setupMobile(){
+  // Default collapse state on mobile: keep date open, collapse the other two
+  const cards=document.querySelectorAll('.scard[data-collapsible]');
+  if(isMobile()){
+    cards.forEach((c,i)=>{
+      // 0 = 日期 (open), 1 = 觀察清單 (collapsed by default), 2 = 輸入今日數據 (open since this is the main work)
+      if(i===1) c.classList.add('collapsed');
+      else c.classList.remove('collapsed');
+    });
+  }else{
+    cards.forEach(c=>c.classList.remove('collapsed'));
+  }
+  // FAB visibility tied to scroll position
+  setupFAB();
+}
+
+let fabRaf=null;
+function setupFAB(){
+  const fab=document.querySelector('.fab-jump');
+  if(!fab)return;
+  const onScroll=()=>{
+    if(fabRaf)return;
+    fabRaf=requestAnimationFrame(()=>{
+      fabRaf=null;
+      if(!isMobile()){fab.classList.remove('show');return;}
+      // Show FAB when user scrolled past ~30% of viewport, hide when near results
+      const sidebar=document.querySelector('.sidebar');
+      const main=document.querySelector('.main-panel');
+      if(!sidebar||!main)return;
+      const sidebarBottom=sidebar.getBoundingClientRect().bottom;
+      const vh=window.innerHeight;
+      // Show if sidebar still occupies more than 50% of view AND main panel is below viewport top + 100
+      const mainTop=main.getBoundingClientRect().top;
+      if(sidebarBottom>vh*0.5 && mainTop>120){
+        fab.classList.add('show');
+      }else{
+        fab.classList.remove('show');
+      }
+    });
+  };
+  // Avoid duplicate listeners
+  if(!window._fabBound){
+    window.addEventListener('scroll',onScroll,{passive:true});
+    window.addEventListener('resize',()=>{setupMobile();onScroll();});
+    window._fabBound=true;
+  }
+  onScroll();
+}
+
+function jumpToResults(){
+  const main=document.querySelector('.main-panel');
+  if(main){
+    const top=main.getBoundingClientRect().top + window.pageYOffset - 56;
+    window.scrollTo({top,behavior:'smooth'});
+  }
 }
 
 /* ══════════════════════════════════
@@ -1308,6 +1627,8 @@ function runAnalysis(){
   document.getElementById('wtxt').textContent=WISDOMS[Math.floor(Math.random()*WISDOMS.length)];
   renderResultDateTabs();
   renderResults();renderTrack();
+  // On mobile, scroll to results so user sees them immediately
+  if(isMobile()){setTimeout(jumpToResults,80);}
 }
 
 /* ══════════════════════════════════
@@ -1598,7 +1919,6 @@ setInterval(()=>{if(CU)lsSave();},60000);
 /* ══════════════════════════════════
    RESULT DATE TABS — view per day
 ══════════════════════════════════ */
-// resultViewDate declared at top of script
 
 function renderResultDateTabs(){
   const el = document.getElementById('result-date-tabs');
