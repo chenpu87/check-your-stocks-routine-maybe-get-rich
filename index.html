@@ -236,6 +236,7 @@ button{cursor:pointer;}
   /* CHIPS — bigger tap target */
   .chips-area{min-height:44px;padding:8px;gap:6px;}
   .chip{padding:5px 9px;font-size:11px;}
+  .chip-lbl{font-size:11px;color:var(--t1);}
   .chip-rm{font-size:16px;padding:0 2px;min-width:18px;min-height:18px;}
   .add-row{gap:6px;flex-wrap:nowrap;}
   .input-sm{height:38px;font-size:14px;padding:0 11px;flex:1;min-width:0;}
@@ -483,7 +484,7 @@ button{cursor:pointer;}
   background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r4);
   color:var(--t0);
 }
-.chip-lbl{font-size:9px;color:var(--t3);font-family:var(--body);}
+.chip-lbl{font-size:10px;color:var(--t1);font-family:var(--body);margin-left:2px;}
 .chip-rm{border:none;background:none;color:var(--t3);font-size:14px;padding:0;line-height:1;transition:color .1s;}
 .chip-rm:hover{color:var(--red);}
 .chip-badge{font-size:9px;padding:1px 4px;border-radius:3px;font-family:var(--mono);}
@@ -885,7 +886,10 @@ table.rtbl tbody tr:hover td{background:var(--bg2);}
           <button class="btn-fetch" id="btnfetch" onclick="fetchOne()">抓行情</button>
           <button class="btn-ghost" onclick="addManual()">手動</button>
         </div>
-        <div class="count-hint">已加入 <b id="ccount">0</b> / 10 支 · 每三天更新清單</div>
+        <div class="count-hint" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span>已加入 <b id="ccount">0</b> / 10 支 · 每三天更新清單</span>
+          <button id="btnrefresh" class="btn-ghost" style="height:24px;padding:0 8px;font-size:10px;" onclick="refreshAllNames()" title="從 Yahoo 奇摩股市重新抓取所有股票的名稱與行情">↻ 重抓名稱</button>
+        </div>
         <div style="margin-top:10px;">
           <div class="fetch-status" id="fstatus"><span style="color:var(--t3);">等待抓取...</span></div>
           <div class="flog" id="flog"></div>
@@ -1229,7 +1233,44 @@ function lsLoad(){
     const d=JSON.parse(raw);
     if(d.stocks)S.stocks=d.stocks;
     if(d.entries)S.entries=d.entries;
+    // 清理舊版錯誤名稱（曾誤抓「各日成交資訊」等字串）
+    const BAD=/^(各日成交資訊|null|undefined|NaN|—|-)$/;
+    S.stocks.forEach(s=>{
+      if(!s.name||BAD.test(s.name))s.name=s.code;
+    });
+    Object.values(S.entries).forEach(e=>{
+      if(e&&BAD.test(e.name||''))e.name=undefined;
+    });
   }catch(e){}
+}
+
+/* 一次重抓所有股票的名稱 + 行情 */
+async function refreshAllNames(){
+  if(!S.stocks.length)return;
+  const btn=document.getElementById('btnrefresh');
+  if(btn){btn.disabled=true;btn.textContent='抓取中...';}
+  setSt(`正在重新抓取 ${S.stocks.length} 支股票...`,true);
+  let ok=0;
+  for(const s of S.stocks){
+    const q=await fetchQ(s.code);
+    if(q.src){
+      s.name=q.name;
+      // 也順手更新今日 entry 的 name / 收開盤（若使用者尚未填寫）
+      const key=ek(S.currentDate,s.code);
+      if(!S.entries[key])S.entries[key]={};
+      const e=S.entries[key];
+      if(!e.name||e.name===s.code)e.name=q.name;
+      if(!e.close)e.close=q.close;
+      if(!e.open)e.open=q.open;
+      if(!e.prev)e.prev=q.prev;
+      ok++;
+    }
+    renderChips();
+  }
+  if(btn){btn.disabled=false;btn.textContent='重抓名稱';}
+  setSt(`✓ 完成：${ok}/${S.stocks.length} 支已更新`);
+  lsSave();
+  renderChips();renderSSel();if(S.sel)loadEntry();
 }
 
 /* ══════════════════════════════════
@@ -1410,44 +1451,130 @@ function setSt(m,sp=false){
     :`<span>${m}</span>`;
 }
 
+/* 內建常用台股代碼對照表（涵蓋市值前 200 大 + 知名 ETF）
+   主因：Yahoo 奇摩股市與 TWSE 都不開放 CORS / 反爬蟲嚴格，
+   純前端抓不到中文名稱。內建表可立即顯示，後續再用 OpenAPI 補行情。 */
+const STOCK_NAMES={
+  // 大盤權值
+  '2330':'台積電','2317':'鴻海','2454':'聯發科','2308':'台達電','2382':'廣達',
+  '2891':'中信金','2882':'國泰金','2881':'富邦金','2884':'玉山金','2885':'元大金',
+  '2886':'兆豐金','2880':'華南金','2887':'台新金','2888':'新光金','2890':'永豐金',
+  '2892':'第一金','5880':'合庫金','2883':'開發金','2867':'三商壽','5876':'上海商銀',
+  '1301':'台塑','1303':'南亞','1326':'台化','6505':'台塑化','1101':'台泥','1102':'亞泥',
+  '2002':'中鋼','2207':'和泰車','2105':'正新','1216':'統一','1227':'佳格','1303':'南亞',
+  '2912':'統一超','2912':'統一超','2347':'聯強','2353':'宏碁','2357':'華碩','2376':'技嘉',
+  '2379':'瑞昱','2395':'研華','2474':'可成','2603':'長榮','2609':'陽明','2615':'萬海',
+  '2618':'長榮航','2610':'華航','2412':'中華電','3045':'台灣大','4904':'遠傳',
+  '2303':'聯電','2344':'華邦電','2356':'英業達','2360':'致茂','2369':'菱生','2371':'大同',
+  '2377':'微星','2384':'勝華','2385':'群光','2392':'正崴','2393':'億光','2408':'南亞科',
+  '2409':'友達','2448':'晶電','2449':'京元電子','2450':'神腦','2451':'創見','2455':'全新',
+  '2458':'義隆','2480':'敦陽科','2481':'強茂','2492':'華新科','3034':'聯詠','3035':'智原',
+  '3036':'文曄','3037':'欣興','3044':'健鼎','3045':'台灣大','3231':'緯創','3034':'聯詠',
+  '3056':'富華新','3260':'威剛','3266':'昇陽','3287':'廣寰科','3293':'鈊象','3324':'雙鴻',
+  '3380':'明泰','3402':'漢科','3450':'聯鈞','3481':'群創','3530':'晶相光','3532':'台勝科',
+  '3533':'嘉澤','3653':'健策','3661':'世芯-KY','3673':'TPK-KY','3711':'日月光投控',
+  '3714':'富采','5871':'中租-KY','6239':'力成','6285':'啟碁','6415':'矽力-KY','6446':'藥華藥',
+  '6488':'環球晶','6515':'穎崴','6531':'愛普','6669':'緯穎','6770':'力積電',
+  '6781':'AES-KY','8046':'南電','8069':'元太','8112':'至上','9910':'豐泰','9921':'巨大',
+  '9904':'寶成','9914':'美利達','9917':'中保科','9933':'中鼎','9938':'百和','9941':'裕融',
+  // 知名 ETF
+  '0050':'元大台灣50','0056':'元大高股息','006208':'富邦台50','00878':'國泰永續高股息',
+  '00713':'元大台灣高息低波','00692':'富邦公司治理','00701':'國泰股利精選30',
+  '00919':'群益台灣精選高息','00929':'復華台灣科技優息','00940':'元大台灣價值高息',
+  '00713':'元大台灣高息低波','00881':'國泰台灣5G+','00891':'中信關鍵半導體',
+  '00893':'國泰智能電動車','00895':'富邦未來車','00733':'富邦臺灣中小',
+  '00679B':'元大美債20年','00687B':'國泰20年美債','00772B':'中信高評級公司債',
+  // 傳產／中小型
+  '1447':'力鵬','1455':'集盛','1503':'士電','1504':'東元','1605':'華新','1722':'台肥',
+  '1736':'喬山','1760':'寶齡富錦','1789':'神隆','2049':'上銀','2059':'川湖','2204':'中華',
+  '2231':'為升','2327':'國巨','2328':'廣宇','2337':'旺宏','2345':'智邦','2351':'順德',
+  '2354':'鴻準','2362':'藍天','2368':'金像電','2374':'佳能','2393':'億光','2401':'凌陽',
+  '2434':'統懋','2436':'偉詮電','2439':'美律','2441':'超豐','2443':'昶虹','2453':'凌群',
+  '2457':'飛宏','2459':'敦吉','2467':'志聖','2468':'華經','2471':'資通','2476':'鉅祥',
+  '2478':'大毅','2483':'百容','2486':'一詮','2488':'漢平','2489':'瑞軒','2491':'吉祥全',
+  '2495':'普安','2496':'卓越','2498':'宏達電','3008':'大立光','3019':'亞光','3022':'威強電',
+};
+
 async function fetchQ(code){
+  const c=String(code).trim();
+
+  // ── 第一步：先從內建對照表立即拿到名稱（即使網路抓行情失敗也至少有名稱）──
+  const builtinName=STOCK_NAMES[c]||null;
+
+  // ── 第二步：從 TWSE / TPEX 即時 API 抓行情（瀏覽器可直連，已驗證可用）──
+  // mis.twse 有開放 CORS 給瀏覽器（雖然 server-to-server 會擋）
+  let result=null;
+
+  // 上市
   try{
-    const r=await fetch(`https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_${code}.tw&json=1&delay=0`,{mode:'cors'});
-    const d=await r.json();
-    if(d.msgArray&&d.msgArray.length>0){
-      const s=d.msgArray[0];
-      const cl=parseFloat(s.z)||parseFloat(s.y)||0;
-      const op=parseFloat(s.o)||0;const pv=parseFloat(s.y)||0;const nm=s.n||code;
-      lg(`[上市] ${code} ${nm} 收${cl} 開${op}`,'lok');
-      return{code,name:nm,close:cl,open:op,prev:pv,src:'TWSE'};
+    const r=await fetch(`https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_${c}.tw&json=1&delay=0&_=${Date.now()}`,{cache:'no-store'});
+    if(r.ok){
+      const d=await r.json();
+      if(d.msgArray&&d.msgArray.length>0){
+        const s=d.msgArray[0];
+        const cl=parseFloat(s.z)||parseFloat(s.y)||0;
+        const op=parseFloat(s.o)||0;
+        const pv=parseFloat(s.y)||0;
+        const nm=(s.n&&s.n!==c)?s.n:(builtinName||c);
+        result={code:c,name:nm,close:cl,open:op,prev:pv,src:'TWSE'};
+      }
     }
   }catch(e){}
-  try{
-    const r=await fetch(`https://www.tpex.org.tw/openapi/v1/tpex_mainboard_realtime_quotes?symbol=${code}`,{mode:'cors'});
-    const d=await r.json();
-    if(d&&d.length>0){
-      const s=d[0];
-      const cl=parseFloat(s.Close)||parseFloat(s.PreviousClose)||0;
-      const op=parseFloat(s.Open)||0;const pv=parseFloat(s.PreviousClose)||0;const nm=s.CompanyName||code;
-      lg(`[上櫃] ${code} ${nm} 收${cl} 開${op}`,'lok');
-      return{code,name:nm,close:cl,open:op,prev:pv,src:'TPEX'};
-    }
-  }catch(e){}
-  try{
-    const ds=S.currentDate.replace(/-/g,'');
-    const r=await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${ds}&stockNo=${code}`,{mode:'cors'});
-    const d=await r.json();
-    if(d.stat==='OK'&&d.data&&d.data.length>0){
-      const row=d.data[d.data.length-1];
-      const op=parseFloat(row[3].replace(/,/g,''))||0;
-      const cl=parseFloat(row[6].replace(/,/g,''))||0;
-      const nm=d.title?d.title.replace(/.*\s/,''):code;
-      lg(`[TWSE日報] ${code} ${nm} 收${cl} 開${op}`,'lok');
-      return{code,name:nm,close:cl,open:op,prev:0,src:'TWSE-D'};
-    }
-  }catch(e){}
-  lg(`[失敗] ${code} 無法取得行情`,'lerr');
-  return{code,name:code,close:0,open:0,prev:0,src:null};
+
+  // 上櫃
+  if(!result){
+    try{
+      const r=await fetch(`https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=otc_${c}.tw&json=1&delay=0&_=${Date.now()}`,{cache:'no-store'});
+      if(r.ok){
+        const d=await r.json();
+        if(d.msgArray&&d.msgArray.length>0){
+          const s=d.msgArray[0];
+          const cl=parseFloat(s.z)||parseFloat(s.y)||0;
+          const op=parseFloat(s.o)||0;
+          const pv=parseFloat(s.y)||0;
+          const nm=(s.n&&s.n!==c)?s.n:(builtinName||c);
+          result={code:c,name:nm,close:cl,open:op,prev:pv,src:'TPEX'};
+        }
+      }
+    }catch(e){}
+  }
+
+  // ── 第三步：TWSE 日成交歷史（會有中文標題，可作為名稱來源備援）──
+  if(!result){
+    try{
+      const ds=(S.currentDate||new Date().toISOString().slice(0,10)).replace(/-/g,'');
+      const r=await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${ds}&stockNo=${c}`,{cache:'no-store'});
+      if(r.ok){
+        const d=await r.json();
+        if(d.stat==='OK'&&d.data&&d.data.length>0){
+          const row=d.data[d.data.length-1];
+          const op=parseFloat((row[3]||'').replace(/,/g,''))||0;
+          const cl=parseFloat((row[6]||'').replace(/,/g,''))||0;
+          // 標題格式：「113年04月 2330 台積電 各日成交資訊」→ 取「代碼後、各日前」的中文
+          let nm=builtinName||c;
+          if(d.title){
+            const m=d.title.match(new RegExp(c+'\\s+([^\\s]+?)(?:\\s+各日|\\s*$)'));
+            if(m&&m[1]&&m[1]!=='各日成交資訊')nm=m[1];
+          }
+          result={code:c,name:nm,close:cl,open:op,prev:0,src:'TWSE-D'};
+        }
+      }
+    }catch(e){}
+  }
+
+  // ── 第四步：行情都抓不到，但若內建表有名稱仍可顯示 ──
+  if(!result&&builtinName){
+    lg(`[內建] ${c} ${builtinName}（無即時行情，請手動填入）`,'lok');
+    return{code:c,name:builtinName,close:0,open:0,prev:0,src:'BUILTIN'};
+  }
+
+  if(result){
+    lg(`[${result.src}] ${c} ${result.name} 收${result.close} 開${result.open}`,'lok');
+    return result;
+  }
+
+  lg(`[失敗] ${c} 無法取得行情，可手動加入並自行填寫名稱`,'lerr');
+  return{code:c,name:c,close:0,open:0,prev:0,src:null};
 }
 
 async function fetchOne(){
