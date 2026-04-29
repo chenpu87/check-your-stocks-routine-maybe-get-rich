@@ -177,19 +177,22 @@ button{cursor:pointer;}
   /* TOPBAR — compact */
   .topbar{
     height:50px;padding:0 12px;gap:8px;
-    overflow-x:auto;scrollbar-width:none;
+    overflow-x:visible;
   }
-  .topbar::-webkit-scrollbar{display:none;}
   .topbar-div,.topbar-sub{display:none;}
   .topbar-title{font-size:12px;}
   .logo-icon{width:28px;height:28px;border-radius:6px;}
   .logo-text span{font-size:10px !important;letter-spacing:1.4px !important;}
-  .topbar-right{gap:6px;}
+  .topbar-right{gap:6px;flex-shrink:0;}
   .analyst-badge{display:none;}
   .btn-outline{height:30px;padding:0 10px;font-size:11px;}
   .btn-outline svg{width:11px;height:11px;}
-  .user-pill{padding:3px 8px 3px 4px;font-size:10px;}
-  .user-av{width:18px;height:18px;font-size:8px;}
+  /* On mobile keep user pill ultra-compact: only avatar, hide name */
+  .user-pill{padding:2px;background:transparent;border:none;}
+  .user-pill #uname{display:none;}
+  .user-av{width:26px;height:26px;font-size:10px;}
+  /* Hide "使用說明" text, keep just icon to save room */
+  #btnlogout{padding:0 9px;font-size:11px;}
 
   /* APP LAYOUT — single column, sidebar becomes top section */
   .app-layout{grid-template-columns:1fr;}
@@ -198,7 +201,24 @@ button{cursor:pointer;}
     border-right:none;border-bottom:1px solid var(--bdr);
     padding:12px;gap:10px;
   }
-  .main-panel{padding:14px 12px 24px;}
+  /* Visual divider between input area and analysis area */
+  .main-panel{
+    padding:14px 12px 80px;
+    position:relative;
+  }
+  .main-panel::before{
+    content:'📊 分析輸出';
+    display:block;
+    font-family:var(--display);
+    font-size:10px;font-weight:700;
+    color:var(--t3);
+    letter-spacing:1.2px;
+    text-transform:uppercase;
+    padding:6px 12px;
+    margin:0 -12px 10px;
+    background:var(--bg1);
+    border-bottom:1px solid var(--bdr);
+  }
 
   /* SECTION CARD — tighter */
   .scard{padding:12px 13px;border-radius:var(--r12);}
@@ -237,11 +257,10 @@ button{cursor:pointer;}
   .btn-save{height:42px;font-size:13px;}
   .btn-run{height:48px;font-size:14px;letter-spacing:1.2px;}
 
-  /* TAB NAV — sticky for fast switching */
+  /* TAB NAV — non-sticky on mobile (was overlapping sidebar cards) */
   .tab-nav{
     margin:0 -12px 14px;
     padding:0 12px;
-    position:sticky;top:50px;z-index:50;
     background:var(--bg);
     border-bottom:1px solid var(--bdr);
     -webkit-overflow-scrolling:touch;
@@ -363,19 +382,22 @@ button{cursor:pointer;}
   .fab-jump{
     display:none;
     position:fixed;
-    right:14px;
+    left:14px;
     bottom:calc(14px + env(safe-area-inset-bottom,0px));
-    height:42px;padding:0 16px;
-    border:none;border-radius:21px;
-    background:var(--ora);color:#fff;
-    font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:.5px;
-    box-shadow:0 6px 20px rgba(255,98,0,.45),0 2px 6px rgba(0,0,0,.4);
-    align-items:center;gap:6px;
+    height:40px;padding:0 14px;
+    border:none;border-radius:20px;
+    background:rgba(255,98,0,.95);color:#fff;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:.5px;
+    box-shadow:0 4px 16px rgba(255,98,0,.4),0 1px 3px rgba(0,0,0,.5);
+    align-items:center;gap:5px;
     z-index:400;
-    transition:transform .15s,box-shadow .15s;
+    transition:transform .15s,opacity .2s;
+    opacity:0;pointer-events:none;
   }
-  .fab-jump.show{display:flex;}
-  .fab-jump:active{transform:scale(.95);}
+  .fab-jump.show{display:flex;opacity:1;pointer-events:auto;}
+  .fab-jump:active{transform:scale(.94);}
 }
 
 /* On desktop, force scard body to always show */
@@ -1291,22 +1313,22 @@ function setupFAB(){
     fabRaf=requestAnimationFrame(()=>{
       fabRaf=null;
       if(!isMobile()){fab.classList.remove('show');return;}
-      // Show FAB when user scrolled past ~30% of viewport, hide when near results
-      const sidebar=document.querySelector('.sidebar');
       const main=document.querySelector('.main-panel');
-      if(!sidebar||!main)return;
-      const sidebarBottom=sidebar.getBoundingClientRect().bottom;
+      const btnRun=document.querySelector('.btn-run');
+      if(!main)return;
       const vh=window.innerHeight;
-      // Show if sidebar still occupies more than 50% of view AND main panel is below viewport top + 100
       const mainTop=main.getBoundingClientRect().top;
-      if(sidebarBottom>vh*0.5 && mainTop>120){
-        fab.classList.add('show');
-      }else{
+      // If "執行三重過濾分析" button is visible, hide FAB (user can use that)
+      const btnVisible=btnRun && btnRun.getBoundingClientRect().top < vh-20 && btnRun.getBoundingClientRect().bottom > 60;
+      // If main panel top is already near top of viewport, no need for FAB
+      const mainNearTop=mainTop < 200;
+      if(btnVisible || mainNearTop){
         fab.classList.remove('show');
+      }else{
+        fab.classList.add('show');
       }
     });
   };
-  // Avoid duplicate listeners
   if(!window._fabBound){
     window.addEventListener('scroll',onScroll,{passive:true});
     window.addEventListener('resize',()=>{setupMobile();onScroll();});
@@ -1547,6 +1569,15 @@ function switchTab(tab){
   if(tab==='weekly'){updCStk();renderWeekly();}
   if(tab==='export')renderCondChart();
   if(tab==='admin'&&CU?.role==='admin')renderAdmin();
+  // On mobile: when user explicitly switches tab, scroll to the tab nav so
+  // they immediately see the content that just changed.
+  if(typeof isMobile==='function' && isMobile()){
+    const tabNav=document.querySelector('.tab-nav');
+    if(tabNav){
+      const top=tabNav.getBoundingClientRect().top + window.pageYOffset - 56;
+      window.scrollTo({top,behavior:'smooth'});
+    }
+  }
 }
 
 /* ══════════════════════════════════
